@@ -1,0 +1,6 @@
+.env.local
+.env
+uploads/
+resultados/
+__pycache__/
+*.pyc

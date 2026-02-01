@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movimentação Bancária - Extrator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+        }
+        h1 {
+            text-align: center;
+            color: #cc2229;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #cc2229;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        .row .form-group { flex: 1; }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #cc2229;
+            background: #fff5f5;
+        }
+        .upload-area.has-file {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        .upload-area p {
+            color: #666;
+            font-size: 16px;
+        }
+        .upload-area .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .upload-area .filename {
+            color: #28a745;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        input[type="file"] { display: none; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #cc2229;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #a81c22; }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .progress-container {
+            display: none;
+            margin-top: 24px;
+        }
+        .progress-bar-bg {
+            background: #e0e0e0;
+            border-radius: 8px;
+            height: 24px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #cc2229, #e74c3c);
+            height: 100%;
+            width: 0%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .progress-log {
+            background: #1e1e1e;
+            color: #0f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .progress-log .log-line {
+            margin-bottom: 2px;
+        }
+        .progress-log .error { color: #ff6b6b; }
+        .progress-log .success { color: #51cf66; }
+        .result-container {
+            display: none;
+            margin-top: 24px;
+            text-align: center;
+            padding: 24px;
+            background: #f0fff4;
+            border-radius: 12px;
+            border: 2px solid #28a745;
+        }
+        .result-container h3 {
+            color: #28a745;
+            margin-bottom: 8px;
+        }
+        .result-container p {
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .btn-download {
+            display: inline-block;
+            padding: 12px 32px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-download:hover { background: #218838; }
+        .error-container {
+            display: none;
+            margin-top: 24px;
+            padding: 16px;
+            background: #fff5f5;
+            border-radius: 12px;
+            border: 2px solid #dc3545;
+            color: #dc3545;
+            text-align: center;
+        }
+        .info {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Movimentacao Bancaria</h1>
+        <p class="subtitle">Envie o extrato em PDF e receba a planilha preenchida em DOCX</p>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="row">
+                <div class="form-group">
+                    <label>Banco</label>
+                    <input type="text" id="banco" name="banco" value="BRADESCO">
+                </div>
+                <div class="form-group">
+                    <label>Agencia</label>
+                    <input type="text" id="agencia" name="agencia" value="3050">
+                </div>
+                <div class="form-group">
+                    <label>Conta</label>
+                    <input type="text" id="conta" name="conta" value="7223-0">
+                </div>
+            </div>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('pdfFile').click()">
+                <div class="icon">📄</div>
+                <p>Clique ou arraste o extrato PDF aqui</p>
+                <div class="filename" id="fileName"></div>
+            </div>
+            <input type="file" id="pdfFile" name="pdf" accept=".pdf" required>
+
+            <button type="submit" class="btn" id="btnProcessar">Processar Extrato</button>
+        </form>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-bg">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <div class="progress-log" id="progressLog"></div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <h3>Documento Gerado!</h3>
+            <p id="resultInfo"></p>
+            <a class="btn-download" id="btnDownload" href="#">Baixar DOCX</a>
+        </div>
+
+        <div class="error-container" id="errorContainer"></div>
+
+        <p class="info">O extrato e processado pela IA da OpenAI (GPT-4o Vision).<br>Cada pagina e analisada individualmente para maxima precisao.</p>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfFile = document.getElementById('pdfFile');
+        const fileName = document.getElementById('fileName');
+        const form = document.getElementById('uploadForm');
+        const btnProcessar = document.getElementById('btnProcessar');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressLog = document.getElementById('progressLog');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultInfo = document.getElementById('resultInfo');
+        const btnDownload = document.getElementById('btnDownload');
+        const errorContainer = document.getElementById('errorContainer');
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                pdfFile.files = e.dataTransfer.files;
+                updateFileName();
+            }
+        });
+        pdfFile.addEventListener('change', updateFileName);
+
+        function updateFileName() {
+            if (pdfFile.files.length) {
+                fileName.textContent = pdfFile.files[0].name;
+                uploadArea.classList.add('has-file');
+            }
+        }
+
+        function addLog(msg, type = '') {
+            const line = document.createElement('div');
+            line.className = 'log-line ' + type;
+            line.textContent = '> ' + msg;
+            progressLog.appendChild(line);
+            progressLog.scrollTop = progressLog.scrollHeight;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!pdfFile.files.length) {
+                alert('Selecione um arquivo PDF');
+                return;
+            }
+
+            // Reset UI
+            btnProcessar.disabled = true;
+            btnProcessar.textContent = 'Processando...';
+            progressContainer.style.display = 'block';
+            resultContainer.style.display = 'none';
+            errorContainer.style.display = 'none';
+            progressLog.innerHTML = '';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            const formData = new FormData(form);
+
+            try {
+                addLog('Enviando PDF para o servidor...');
+
+                const response = await fetch('/processar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Ler resposta como stream para progresso
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let lastResult = null;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // último item pode estar incompleto
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+
+                                if (data.tipo === 'progresso') {
+                                    const pct = data.total > 0
+                                        ? Math.round((data.pagina / data.total) * 100)
+                                        : 0;
+                                    progressBar.style.width = pct + '%';
+                                    progressBar.textContent = pct + '%';
+                                    addLog(data.mensagem);
+                                } else if (data.tipo === 'concluido') {
+                                    lastResult = data;
+                                    progressBar.style.width = '100%';
+                                    progressBar.textContent = '100%';
+                                    addLog(data.mensagem, 'success');
+                                } else if (data.tipo === 'erro') {
+                                    addLog(data.mensagem, 'error');
+                                }
+                            } catch (parseErr) {
+                                // Ignorar linhas que não são JSON válido
+                            }
+                        }
+                    }
+                }
+
+                if (lastResult && lastResult.arquivo) {
+                    resultContainer.style.display = 'block';
+                    resultInfo.textContent = `${lastResult.total_lancamentos} lancamentos extraidos`;
+                    btnDownload.href = '/download/' + lastResult.arquivo;
+                } else if (!lastResult) {
+                    errorContainer.style.display = 'block';
+                    errorContainer.textContent = 'Erro: Nenhuma resposta do servidor.';
+                }
+
+            } catch (err) {
+                errorContainer.style.display = 'block';
+                errorContainer.textContent = 'Erro: ' + err.message;
+                addLog('ERRO: ' + err.message, 'error');
+            } finally {
+                btnProcessar.disabled = false;
+                btnProcessar.textContent = 'Processar Extrato';
+            }
+        });
+    </script>
+</body>
+</html>
